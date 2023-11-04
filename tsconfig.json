@@ -1,0 +1,17 @@
+{
+	"compilerOptions": {
+		"jsx": "react-jsx",
+		"jsxImportSource": "hono/jsx",
+		"target": "esnext",
+		"module": "esnext",
+		"lib": ["esnext"],
+		"types": ["@cloudflare/workers-types/2023-07-01"],
+		"moduleResolution": "node",
+		"strict": true,
+		"noEmit": true,
+		"esModuleInterop": true,
+		"baseUrl": "./",
+		"resolveJsonModule": true
+	},
+	"include": ["src/**/*", "bindings.d.ts"]
+}

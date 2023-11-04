@@ -1,0 +1,34 @@
+name = "followage"
+main = "dist/index.mjs"
+
+workers_dev = false
+account_id = "dc941e8156f4a1336ca08481cb6d4222"
+
+compatibility_date = "2023-09-29"
+compatibility_flags = []
+
+routes = [
+	{ pattern = "commands.garretcharp.com", custom_domain = true }
+]
+
+kv_namespaces = [
+	{ binding = "KV", id = "406ee79c99694dc2942a7d9bf74ec9d1" }
+]
+
+[durable_objects]
+bindings = [
+	{ name = "AuthTokens", class_name = "AuthTokens" }
+]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["AuthTokens"]
+
+[[analytics_engine_datasets]]
+binding = "FollowageApp"
+
+[vars]
+WEBHOOK_BASE_URL = "https://commands.garretcharp.com"
+
+[build]
+command = "npm run build"

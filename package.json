@@ -1,0 +1,24 @@
+{
+  "name": "commands",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "build": "esbuild --bundle --sourcemap --minify --target=esnext --format=esm --outdir=dist --out-extension:.js=.mjs ./src/index.tsx",
+    "dev": "wrangler dev --local-upstream localhost:8787 --port 8787",
+    "deploy": "wrangler deploy"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "hono": "^3.9.0",
+    "oslo": "^0.14.0",
+    "zod": "^3.22.2"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20230922.0",
+    "esbuild": "^0.14.47",
+    "wrangler": "^3.15.0"
+  },
+  "volta": {
+    "node": "18.18.0"
+  }
+}

@@ -28,8 +28,7 @@ app.get('/', async c => {
 		).fetch('https://fake/token')
 	) : null
 
-	const data = token ? token.success ? await safe(token.data.json<{ id_token: string }>()) : null : null
-
+	const data = token?.success && token.data.status === 200 ? await safe(token.data.json<{ id_token: string }>()) : null
 	const login = data?.success && typeof data.data.id_token === 'string' ? parseIdToken(data.data.id_token) : null
 
 	if (tsid) {
@@ -45,15 +44,15 @@ app.get('/', async c => {
 
 		if (tsid && !login) {
 			const e = safe(() => {
-				if (!token) return 'No token?'
-				if (!token.success) return `Token error: ${token.error.message}`
-				if (token.data.status !== 200) return `Bad status code: ${token.data.status}`
+				if (!token) return 'No token? (this should not happen)'
+				if (!token.success) return `Error fetching token from AuthTokens. Error: ${token.error.message}`
+				if (token.data.status !== 200) return `Error fetching token from AuthTokens. Status Code: ${token.data.status}`
 
-				if (!data) return 'No data?'
-				if (!data.success) return `Data error: ${data.error.message}`
-				if (typeof data.data.id_token !== 'string') return 'No id_token?'
-				if (!login) return 'No login?'
-				return 'this should not happen?'
+				if (!data) return 'No data? (this should not happen)'
+				if (!data.success) return `Could not parse data as json string: ${data.error.message}`
+				if (typeof data.data.id_token !== 'string') return `Data error: id_token is not a string. Data: ${JSON.stringify(data.data)}`
+
+				return 'id_token should be a string... this should not happen (invalid id_token data)'
 			})
 
 			c.env.FollowageApp.writeDataPoint({

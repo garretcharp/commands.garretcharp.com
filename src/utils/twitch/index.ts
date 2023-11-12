@@ -1,5 +1,5 @@
 import { object, string, number, array } from 'zod'
-import { decodeBase64 } from 'oslo/encoding'
+import { decodeBase64, encodeBase64 } from 'oslo/encoding'
 import { safe } from '../index'
 
 const AppTokenResponse = object({
@@ -9,8 +9,21 @@ const AppTokenResponse = object({
 
 const IDToken = object({
 	sub: string().min(1),
+	login: string().min(1).optional().nullable(),
 	preferred_username: string().min(1)
 }).passthrough()
+
+export const generateIdToken = (user: { id: string, login: string, display_name: string }) => {
+	const encoded = new TextEncoder().encode(
+		JSON.stringify({
+			sub: user.id,
+			login: user.login,
+			preferred_username: user.display_name
+		})
+	)
+
+	return `fake.${encodeBase64(encoded)}.fake`
+}
 
 export const parseIdToken = (token: string) => {
 	const parts = token.split('.')
@@ -30,7 +43,6 @@ export const parseIdToken = (token: string) => {
 
 const UserTokenResponse = AppTokenResponse.extend({
 	refresh_token: string().min(10),
-	id_token: string().refine(value => parseIdToken(value) !== null).nullish(),
 	scope: array(string())
 })
 
@@ -130,6 +142,40 @@ const TwitchUser = object({
 const TwitchUsersResponse = object({
 	data: array(TwitchUser)
 })
+
+export const getTwitchCurrentUser = async ({ env, ctx, token }: { env: Bindings, ctx?: ExecutionContext, token: string }) => {
+	const response = await safe(
+		fetch('https://api.twitch.tv/helix/users', {
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded',
+				'Client-ID': env.TWITCH_CLIENT_ID,
+				Authorization: `Bearer ${token}`
+			}
+		})
+	)
+
+	if (!response.success || response.data.status !== 200) {
+		if (response.success) throw new Error(await response.data.text())
+		else throw response.error
+	}
+
+	const data = await safe(response.data.json())
+
+	if (!data.success) throw new Error('Failed to get users, twitch response error (unable to parse). Response: ' + await response.data.text())
+
+	const { data: twitchUsers } = TwitchUsersResponse.parse(data.data)
+
+	if (twitchUsers.length !== 1) throw new Error('Failed to get users, twitch response error (invalid response). Response: ' + await response.data.text())
+
+	const user = twitchUsers[0]
+
+	ctx?.waitUntil(safe(
+		env.KV.put(`Twitch/Logins/${user.login.toLowerCase()}`, JSON.stringify(user), { expirationTtl: 60 * 60 * 24 * 7 })
+	))
+
+	return user
+}
 
 export const getTwitchUsers = async ({ env, logins, ctx }: { env: Bindings, logins: string[], ctx?: ExecutionContext }) => {
 	const result: Map<string, { id: string, login: string, display_name: string }> = new Map()
@@ -233,4 +279,39 @@ export const getTwitchFollower = async ({ env, streamer, viewer, moderator }: Ge
 	if (!data.success) throw new Error('Failed to get followers, twitch response error (unable to parse). Response: ' + await response.data.text())
 
 	return TwitchFollowResponse.parse(data.data).data[0]
+}
+
+const TwitchChattersResponse = object({
+	data: array(object({
+		user_id: string({ required_error: 'id is required' }).min(1, { message: 'id is too short' }),
+		user_login: string({ required_error: 'login is required' }).min(1, { message: 'login is too short' }),
+		user_name: string({ required_error: 'name is required' }).min(1, { message: 'name is too short' })
+	}))
+})
+
+type GetTwitchChattersParams = Omit<GetTwitchFollowerParams, 'viewer'>
+
+export const getTwitchChatters = async ({ env, streamer, moderator }: GetTwitchChattersParams) => {
+	const access_token = await getTwitchUserToken({ env, userId: moderator ?? streamer.id })
+
+	const response = await safe(
+		fetch(`https://api.twitch.tv/helix/chat/chatters?broadcaster_id=${streamer.id}&first=1000&moderator_id=${moderator ?? streamer.id}`, {
+			method: 'GET',
+			headers: {
+				'Client-ID': env.TWITCH_CLIENT_ID,
+				Authorization: `Bearer ${access_token}`
+			}
+		})
+	)
+
+	if (!response.success || response.data.status !== 200) {
+		if (response.success) throw new Error(await response.data.text())
+		else throw response.error
+	}
+
+	const data = await safe(response.data.json())
+
+	if (!data.success) throw new Error('Failed to get chatters, twitch response error (unable to parse). Response: ' + await response.data.text())
+
+	return TwitchChattersResponse.parse(data.data)
 }

@@ -3,7 +3,7 @@ import { array, object, string } from 'zod'
 import { createDate, TimeSpan } from 'oslo'
 import { encodeBase64 } from 'oslo/encoding'
 import { safe } from '../utils'
-import { getTwitchAppToken, getTwitchToken, parseIdToken } from '../utils/twitch'
+import { generateIdToken, getTwitchAppToken, getTwitchToken, parseIdToken } from '../utils/twitch'
 
 const EVENTS = ['user.update', 'stream.online', 'stream.offline']
 
@@ -87,19 +87,17 @@ export default class AuthTokens implements DurableObject {
 		})
 
 		this.app.post('/user', async c => {
-			const parsed = await safe<{ user_id: string, user_name: string }>(c.req.json())
+			const parsed = await safe<{ user_id: string, user_login: string, user_name: string }>(c.req.json())
 			if (!parsed.success) return c.json({ success: false, error: parsed.error }, 400)
 
 			const data = await this.state.storage.get('token') as { [key: string]: any } | undefined
 			if (!data) return c.json({ success: false, error: 'not found' }, 404)
 
 			const user = parsed.data
-			const encoded = new TextEncoder().encode(JSON.stringify({ sub: user.user_id, preferred_username: user.user_name }))
-			const id_token = `fake.${encodeBase64(encoded)}.fake`
 
 			await this.state.storage.put('token', {
 				...data,
-				id_token
+				id_token: generateIdToken({ id: user.user_id, login: user.user_login, display_name: user.user_name })
 			})
 		})
 

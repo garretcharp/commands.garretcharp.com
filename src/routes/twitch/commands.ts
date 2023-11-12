@@ -1,8 +1,8 @@
 import { Hono } from 'hono/quick'
 import { timing, startTime, endTime } from 'hono/timing'
-import { safe } from '../../utils'
+import { randomNumber, safe } from '../../utils'
 import { getFormat, getFormattedData } from '../../utils/time'
-import { getTwitchFollower, getTwitchUsers } from '../../utils/twitch'
+import { getTwitchChatters, getTwitchFollower, getTwitchUsers } from '../../utils/twitch'
 
 const routes = new Hono<{ Bindings: Bindings }>()
 
@@ -143,6 +143,119 @@ routes.get('/followage/:streamer/:viewer', timing(), async c => {
 	if (data.seconds && data.seconds > 0) parts.push(`${data.seconds} second${data.seconds === 1 ? '' : 's'}`)
 
 	return c.text(`@${users.viewer.login} has been following @${users.streamer.login} for ${parts.join(', ')}.`)
+})
+
+routes.get('/chatter/:streamer', timing(), async c => {
+	const { streamer } = c.req.param()
+
+	if (streamer === '$(channel)') return c.text('$(channel) is a replacement for the streamers username in nightbot, if you do not use nightbot you need to use a variable that replaces to the streamer username in that bot.')
+	if (streamer === '{StreamerUsername}') return c.text('You need to replace {StreamerUsername} with the streamers username.')
+
+	startTime(c, 'users', 'Fetch Twitch User')
+	const response = await safe(
+		getTwitchUsers({
+			env: c.env,
+			logins: [streamer.toLowerCase()],
+			ctx: c.executionCtx
+		})
+	)
+	endTime(c, 'users')
+
+	if (!response.success) {
+		const error = safe(() => JSON.parse(response.error.message))
+
+		if (error.success && error.data.message.toLowerCase().includes('bad identifiers'))
+			return c.text(`Could not get users from Twitch API, the streamers username: ${streamer} is not valid.`)
+
+		safe(() => {
+			c.env.FollowageApp.writeDataPoint({
+				blobs: ['commands/twitch/chatter', `Could not get twitch users: ${response.error.message}`, streamer, '', '', c.req.raw.cf?.colo as string ?? ''],
+				indexes: ['errors']
+			})
+		})
+
+		return c.text(`Could not get users from Twitch API, please try again later and ensure the username is valid: ${streamer}`)
+	}
+
+	const users = { streamer: response.data.get(streamer.toLowerCase()) }
+
+	if (!users.streamer) {
+		safe(() => {
+			c.env.FollowageApp.writeDataPoint({
+				blobs: ['commands/twitch/chatter', `Streamer twitch account ${streamer} was not found.`, streamer, '', '', c.req.raw.cf?.colo as string ?? ''],
+				indexes: ['errors']
+			})
+		})
+
+		return c.text(`Could not find the streamers Twitch accounts: @${streamer}`)
+	}
+
+	const moderatorId = c.req.query('moderatorId')
+
+	startTime(c, 'chatters', 'Fetch Twitch Chatters')
+	const chatters = await safe(
+		getTwitchChatters({
+			env: c.env,
+			streamer: users.streamer,
+			moderator: moderatorId
+		})
+	)
+	endTime(c, 'chatters')
+
+	if (!chatters.success) {
+		if (chatters.error instanceof Error) {
+			if (chatters.error.message.toLowerCase().includes('auth was revoked')) {
+				if (moderatorId) return c.text('The moderator provided in the request has revoked access to the application, please have them login to the application to use this command.')
+				return c.text('The authentication token for the streamer has been revoked, please have them login to the application to use this command.')
+			}
+
+			if (chatters.error.message.toLowerCase().includes('not logged in')) {
+				if (moderatorId) return c.text('The moderator provided in the request is not logged into the application, please have them login to the application to use this command.')
+				return c.text('In order to use this API the streamer must login to the application.')
+			}
+
+			if (chatters.error.message.toLowerCase().includes('not a moderator for the broadcaster')) {
+				return c.text('The moderatorId provided in the request is not a moderator for the streamer. Please ensure the user is a moderator or remove the moderatorId from the request.')
+			}
+
+			if (chatters.error.message.toLowerCase().includes('missing scope')) {
+				if (moderatorId) return c.text('The moderator provided in the request needs to login to the application to get updated permissions required for this API.')
+				return c.text('The streamer needs to login to the application to get updated permissions required for this API.')
+			}
+		}
+
+		safe(() => {
+			c.env.FollowageApp.writeDataPoint({
+				blobs: ['commands/twitch/chatter', `Could not get chatter data: ${chatters.error.message}`, streamer, '', moderatorId ?? '', c.req.raw.cf?.colo as string ?? ''],
+				indexes: ['errors']
+			})
+		})
+
+		return c.text('Unable to get the random chatters due to an error internally or with the Twitch API. Authenticating again may fix this issue, or try again later.')
+	}
+
+	safe(() => {
+		c.env.FollowageApp.writeDataPoint({
+			blobs: ['twitch', 'chatter', users.streamer!.id, users.streamer!.login, '', '', moderatorId ?? '', c.req.raw.cf?.colo as string ?? ''],
+			indexes: ['commands']
+		})
+	})
+
+	const data = chatters.data.data
+	if (data.length) return c.text('No chatters were found.')
+
+	const providedCount = Number(c.req.query('count'))
+	const count = Number.isInteger(providedCount) && providedCount > 0 && providedCount < 10 ? providedCount : 1
+
+	if (data.length <= count) return c.text(data.map(chatter => `@${chatter.user_login}`).join(', '))
+
+	const indexes: number[] = []
+
+	for (let i = 0; i < count; i++) {
+		indexes.push(randomNumber(0, data.length - 1, indexes))
+	}
+
+	return c.text(indexes.map(index => `@${data[index].user_login}`).join(', '))
 })
 
 export default routes

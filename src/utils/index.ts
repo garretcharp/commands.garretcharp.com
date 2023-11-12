@@ -13,18 +13,34 @@ export const constantTimeEqual = (a: string, b: string) => {
 	return c === 0
 }
 
+export const randomNumber = (from: number, to: number, not?: number[]): number => {
+	if (from > to) throw new TypeError('`from` must be less than or equal to `to`')
+
+	const range = to - from
+	const randomBuffer = new Uint32Array(1)
+
+	crypto.getRandomValues(randomBuffer)
+
+	const result = from + Math.floor((randomBuffer[0] / (0xffffffff + 1)) * range)
+
+	if (not?.includes(result)) return randomNumber(from, to, not)
+
+	return result
+}
+
 export const getBaseUrl = (url: string) => {
 	const current = new URL(url)
 
 	return `${current.protocol}//${current.host}`
 }
 
+export const Twitch_Auth_Scopes = ['moderator:read:followers', 'moderator:read:chatters'] as const
 export const getTwitchAuthLink = (url: string, client_id: string) => {
 	const query = new URLSearchParams({
 		client_id,
 		redirect_uri: `${getBaseUrl(url)}/auth/twitch/callback`,
 		response_type: 'code',
-		scope: 'moderator:read:followers openid'
+		scope: Twitch_Auth_Scopes.join(' ')
 	})
 
 	return `https://id.twitch.tv/oauth2/authorize?${query.toString()}`

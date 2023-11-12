@@ -3,8 +3,8 @@ import { jsx } from 'hono/jsx'
 
 import { Hono } from 'hono/quick'
 import { setCookie, getCookie, deleteCookie } from 'hono/cookie'
-import { safe, getBaseUrl, getTwitchAuthLink } from './utils'
-import { getTwitchToken, parseIdToken } from './utils/twitch'
+import { safe, getBaseUrl, getTwitchAuthLink, Twitch_Auth_Scopes } from './utils'
+import { generateIdToken, getTwitchCurrentUser, getTwitchToken, parseIdToken } from './utils/twitch'
 
 import TwitchCommandRoutes from './routes/twitch/commands'
 import TwitchWebhookRoutes from './routes/twitch/webhooks'
@@ -131,6 +131,34 @@ app.get('/', async c => {
 						</div>
 					</details>
 				</details>
+
+				<details open>
+					<summary>Random Chatter Command (Login Required)</summary>
+
+					<div>
+						<code style="display: block; padding-top: 20px; padding-bottom: 20px;">
+							{getBaseUrl(c.req.url)}/twitch/chatter/{span('green', '{StreamerUsername}')}?count={span('green', '{count}')}&moderatorId={span('green', '{ModeratorId}')}
+						</code>
+
+						<p>Note: Currently this will select randomly from the first 1,000 viewers if you have more than this not every chatter will be considered.</p>
+					</div>
+
+					<details open style="margin-left: 15px; padding-top: 10px;">
+						<summary>Nightbot</summary>
+
+						<div style="margin-left: 30px; padding-top: 20px;">
+							<details open>
+								<summary>Using Streamer Login</summary>
+								<p><code>!commands add !randomuser $(urlfetch {getBaseUrl(c.req.url)}/twitch/chatter/$(channel))</code></p>
+							</details>
+
+							<details style="padding-top: 20px;">
+								<summary>Using Moderator Login</summary>
+								<p><code>!commands add !randomuser $(urlfetch {getBaseUrl(c.req.url)}/twitch/chatter/$(channel)?moderatorId={login ? login.sub : '{moderatorId}'})</code></p>
+							</details>
+						</div>
+					</details>
+				</details>
 			</body>
 		</html>
 	)
@@ -156,7 +184,7 @@ app.get('/auth/twitch/callback', async c => {
 
 	const scopes = params.scope.split(' ')
 
-	if (!scopes.includes('moderator:read:followers') || !scopes.includes('openid')) {
+	if (!Twitch_Auth_Scopes.every(scope => scopes.includes(scope))) {
 		return c.text('Failed to login, invalid scopes. Please try again.', 400)
 	}
 
@@ -185,26 +213,32 @@ app.get('/auth/twitch/callback', async c => {
 		return c.text('Failed to login, twitch error. please try again.', 400)
 	}
 
-	if (typeof token.data.id_token !== 'string') {
-		return c.text('Failed to login, invalid id token. Please try again.', 400)
+	const user = await safe(getTwitchCurrentUser({ env: c.env, token: token.data.access_token, ctx: c.executionCtx }))
+
+	if (!user.success) {
+		safe(() => {
+			c.env.FollowageApp.writeDataPoint({
+				blobs: ['logins/twitch', `Could not get current Twitch user: ${user.error.message}`, '', '', '', c.req.raw.cf?.colo as string ?? ''],
+				indexes: ['errors']
+			})
+		})
+
+		return c.text('Failed to login, twitch error. please try again.', 400)
 	}
-
-	const data = parseIdToken(token.data.id_token)
-
-	if (data === null) {
-		return c.text('Failed to login, invalid id token. Please try again.', 400)
-	}
-
-	// TODO: Does id token contain the login name and display name?
-	// c.executionCtx?.waitUntil(safe(
-	// 	c.env.KV.put(`Twitch/Logins/${login.toLowerCase()}`, JSON.stringify({ id: data.sub, login, display_name }), { expirationTtl: 60 * 60 * 24 * 7 })
-	// ))
 
 	const stub = c.env.AuthTokens.get(
-		c.env.AuthTokens.idFromName(data.sub)
+		c.env.AuthTokens.idFromName(user.data.id)
 	)
 
-	const save = await safe(stub.fetch('https://fake/login', { method: 'POST', body: JSON.stringify(token.data) }))
+	const save = await safe(
+		stub.fetch('https://fake/login', {
+			method: 'POST',
+			body: JSON.stringify({
+				...token.data,
+				id_token: generateIdToken(user.data)
+			})
+		})
+	)
 
 	if (!save.success || save.data.status !== 200) {
 		const text = save.success ? await save.data.text() : save.error.message

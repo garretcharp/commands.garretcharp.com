@@ -132,7 +132,7 @@ app.get('/', async c => {
 					</details>
 				</details>
 
-				<details open>
+				<details open style="padding-top: 40px;">
 					<summary>Random Chatter Command (Login Required)</summary>
 
 					<div>

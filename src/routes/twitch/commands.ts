@@ -247,7 +247,7 @@ routes.get('/chatter/:streamer', timing(), async c => {
 	const providedCount = Number(c.req.query('count'))
 	const count = Number.isInteger(providedCount) && providedCount > 0 && providedCount < 10 ? providedCount : 1
 
-	if (data.length <= count) return c.text(data.map(chatter => `@${chatter.user_login}`).join(', '))
+	if (data.length <= count) return c.text(data.map(chatter => chatter.user_login).join(', '))
 
 	const indexes: number[] = []
 
@@ -255,7 +255,7 @@ routes.get('/chatter/:streamer', timing(), async c => {
 		indexes.push(randomNumber(0, data.length - 1, indexes))
 	}
 
-	return c.text(indexes.map(index => `@${data[index].user_login}`).join(', '))
+	return c.text(indexes.map(index => data[index].user_login).join(', '))
 })
 
 export default routes

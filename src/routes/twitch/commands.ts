@@ -249,7 +249,7 @@ routes.get('/chatter/:streamer', timing(), async c => {
 	const count = Number.isInteger(providedCount) ? Math.max(1, providedCount) : 1
 
 	const indexes: number[] = []
-	for (let i = 0; i < Math.min(count, data.length); i++) {
+	for (let i = 0; i < Math.min(count, data.length - 1); i++) {
 		indexes.push(randomNumber(0, data.length - 1, indexes))
 	}
 

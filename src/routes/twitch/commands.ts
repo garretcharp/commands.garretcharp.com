@@ -234,14 +234,15 @@ routes.get('/chatter/:streamer', timing(), async c => {
 		return c.text('Unable to get the random chatters due to an error internally or with the Twitch API. Authenticating again may fix this issue, or try again later.')
 	}
 
+	const data = chatters.data.data
+
 	safe(() => {
 		c.env.FollowageApp.writeDataPoint({
-			blobs: ['twitch', 'chatter', users.streamer!.id, users.streamer!.login, '', '', moderatorId ?? '', c.req.raw.cf?.colo as string ?? ''],
+			blobs: ['twitch', 'chatter', users.streamer!.id, users.streamer!.login, `Chatters: ${data.length}`, '', moderatorId ?? '', c.req.raw.cf?.colo as string ?? ''],
 			indexes: ['commands']
 		})
 	})
 
-	const data = chatters.data.data
 	if (data.length) return c.text('No chatters were found.')
 
 	const providedCount = Number(c.req.query('count'))

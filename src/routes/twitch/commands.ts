@@ -243,16 +243,13 @@ routes.get('/chatter/:streamer', timing(), async c => {
 		})
 	})
 
-	if (data.length === 0) return c.text('No chatters were found.')
+	if (data.length === 0) return c.text('ERROR: Empty chatter list')
 
 	const providedCount = Number(c.req.query('count'))
-	const count = Number.isInteger(providedCount) && providedCount > 0 && providedCount < 10 ? providedCount : 1
-
-	if (data.length <= count) return c.text(data.map(chatter => chatter.user_login).join(', '))
+	const count = Number.isInteger(providedCount) ? Math.max(1, providedCount) : 1
 
 	const indexes: number[] = []
-
-	for (let i = 0; i < count; i++) {
+	for (let i = 0; i < Math.min(count, data.length); i++) {
 		indexes.push(randomNumber(0, data.length - 1, indexes))
 	}
 

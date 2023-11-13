@@ -15,11 +15,11 @@ export const constantTimeEqual = (a: string, b: string) => {
 
 export const randomNumber = (from: number, to: number, not?: number[]): number => {
 	if (from > to) throw new TypeError('`from` must be less than or equal to `to`')
+	if (not && not.length >= to - from) throw new TypeError('`not` must be less than `to` - `from`')
 
 	const range = to - from
-	const randomBuffer = new Uint32Array(1)
 
-	crypto.getRandomValues(randomBuffer)
+	const randomBuffer = crypto.getRandomValues(new Uint32Array(1))
 
 	const result = from + Math.floor((randomBuffer[0] / (0xffffffff + 1)) * range)
 

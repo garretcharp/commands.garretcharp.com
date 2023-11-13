@@ -243,7 +243,7 @@ routes.get('/chatter/:streamer', timing(), async c => {
 		})
 	})
 
-	if (data.length) return c.text('No chatters were found.')
+	if (data.length === 0) return c.text('No chatters were found.')
 
 	const providedCount = Number(c.req.query('count'))
 	const count = Number.isInteger(providedCount) && providedCount > 0 && providedCount < 10 ? providedCount : 1

@@ -145,6 +145,20 @@ routes.get('/followage/:streamer/:viewer', timing(), async c => {
 	return c.text(`@${users.viewer.login} has been following @${users.streamer.login} for ${parts.join(', ')}.`)
 })
 
+// bots / viewers in all channels that arent real
+const KnownBots = [
+	'nightbot',
+	'streamelements',
+	'fossabot',
+	'wizebot',
+	'moobot',
+	'commanderroot',
+	'anotherttvviewer',
+	'00rianaa',
+	'01ella',
+	'asmr_miyu'
+]
+
 routes.get('/chatter/:streamer', timing(), async c => {
 	const { streamer } = c.req.param()
 
@@ -243,17 +257,19 @@ routes.get('/chatter/:streamer', timing(), async c => {
 		})
 	})
 
-	if (data.length === 0) return c.text('ERROR: Empty chatter list')
+	const chattingUsers = c.req.query('bots') === 'true' ? data : data.filter(user => !KnownBots.includes(user.user_login))
+
+	if (chattingUsers.length === 0) return c.text('ERROR: Empty chatter list')
 
 	const providedCount = Number(c.req.query('count'))
 	const count = Number.isInteger(providedCount) ? Math.max(1, providedCount) : 1
 
 	const indexes: number[] = []
-	for (let i = 0; i < Math.min(count, data.length - 1); i++) {
-		indexes.push(randomNumber(0, data.length - 1, indexes))
+	for (let i = 0; i < Math.min(count, chattingUsers.length - 1); i++) {
+		indexes.push(randomNumber(0, chattingUsers.length - 1, indexes))
 	}
 
-	return c.text(indexes.map(index => data[index].user_login).join(', '))
+	return c.text(indexes.map(index => chattingUsers[index].user_login).join(', '))
 })
 
 export default routes

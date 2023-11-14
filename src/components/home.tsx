@@ -105,7 +105,7 @@ const AuthenticatedHome = ({ c, login }: HomeParams & { login: NonNullable<Await
 			Commands:
 		</h3>
 
-		<CommandsList c={c} commands={commands(getBaseUrl(c.req.url), null)} />
+		<CommandsList c={c} commands={commands(getBaseUrl(c.req.url), login)} />
 	</div>
 )
 

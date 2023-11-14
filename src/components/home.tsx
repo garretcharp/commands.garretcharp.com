@@ -5,7 +5,7 @@ import CommandsList from './commands'
 
 import { Context } from 'hono'
 import { AuthenticatedView, UnauthenticatedView } from './login'
-import { getBaseUrl, getCurrentTwitchLogin } from 'src/utils'
+import { getBaseUrl, getCurrentTwitchLogin, safe } from 'src/utils'
 
 type HomeParams = { c: Context<{ Bindings: Bindings }, "/", {}> }
 
@@ -111,6 +111,13 @@ const AuthenticatedHome = ({ c, login }: HomeParams & { login: NonNullable<Await
 
 export default async function Home({ c }: HomeParams) {
 	const login = await getCurrentTwitchLogin(c)
+
+	safe(() => {
+		c.env.FollowageApp.writeDataPoint({
+			blobs: ['/', c.req.raw.cf?.colo as string ?? '', login ? 'authenticated' : 'unauthenticated'],
+			indexes: ['page_views']
+		})
+	})
 
 	if (login) return <AuthenticatedHome c={c} login={login} />
 	return <UnauthenticatedHome c={c} />

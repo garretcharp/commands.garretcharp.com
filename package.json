@@ -9,7 +9,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "hono": "^3.9.0",
+    "hono": "^3.10.0",
     "oslo": "^0.14.0",
     "zod": "^3.22.2"
   },

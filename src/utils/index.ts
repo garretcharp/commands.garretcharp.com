@@ -1,3 +1,50 @@
+import { type Context } from 'hono'
+import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
+import { parseIdToken } from 'src/utils/twitch'
+
+export const TSID_COOKIE_OPTIONS = { maxAge: 60 * 60 * 24 * 7, httpOnly: true, path: '/' }
+
+export const getCurrentTwitchLogin = async (c: Context<{ Bindings: Bindings }, "/", {}>) => {
+	const tsid = getCookie(c, 'tsid')
+
+	if (!tsid) return null
+
+	const token = await safe(
+		c.env.AuthTokens.get(
+			c.env.AuthTokens.idFromString(tsid)
+		).fetch('https://fake/token')
+	)
+
+	if (!token.success) {
+		deleteCookie(c, 'tsid')
+		return null
+	}
+
+	if (token.data.status !== 200) {
+		deleteCookie(c, 'tsid')
+		return null
+	}
+
+	const data = await safe(token.data.json<{ id_token: string }>())
+
+	if (!data.success) {
+		deleteCookie(c, 'tsid')
+		return null
+	}
+
+	if (typeof data.data.id_token !== 'string') {
+		deleteCookie(c, 'tsid')
+		return null
+	}
+
+	const login = parseIdToken(data.data.id_token)
+
+	if (login) setCookie(c, 'tsid', tsid, TSID_COOKIE_OPTIONS)
+	else deleteCookie(c, 'tsid')
+
+	return login
+}
+
 export const constantTimeEqual = (a: string, b: string) => {
 	if (a.length !== b.length) return false
 

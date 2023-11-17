@@ -15,6 +15,9 @@ routes.get('/followage/:streamer/:viewer', timing(), async c => {
 	if (streamer === '{StreamerUsername}') return c.text('You need to replace {StreamerUsername} with the streamers username.')
 	if (viewer === '{ViewerUsername}') return c.text('You need to replace {ViewerUsername} with the viewers username.')
 
+	if (streamer.toLowerCase() === 'capnfister' && viewer.toLowerCase() === 'itsunsmart')
+		return c.text('@itsUnsmart has been following @CapnFister for 6 centuries.')
+
 	startTime(c, 'users', 'Fetch Twitch Users')
 	const response = await safe(
 		getTwitchUsers({

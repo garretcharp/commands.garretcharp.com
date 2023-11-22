@@ -14,10 +14,30 @@ const span = (color: string, value: string) => <span style={`color: ${color};`}>
 const commands = (base: string, login: { sub: string } | null): Parameters<typeof CommandsList>[0]['commands'] => [
 	{
 		name: 'Followage',
-		api: `${base}/twitch/followage/{StreamerUsername}/{ViewerUsername}?format={Format}&moderatorId={ModeratorId}`,
+		api: `${base}/twitch/followage/{StreamerUsername}/{ViewerUsername}?format={Format}&ping={true|false}&moderatorId={ModeratorId}`,
 		requiresLogin: true,
 		notes: (
 			<div>
+				<p>
+					<code>StreamerUsername</code> is the username of the streamer.
+				</p>
+
+				<p>
+					<code>ViewerUsername</code> is the username of the viewer.
+				</p>
+
+				<p>
+					<code>format</code> is the format of the output. The default format is <code>ymdhis</code>. More on formats below.
+				</p>
+
+				<p>
+					<code>ping</code> is whether or not to ping the streamer and viewer in the output.
+				</p>
+
+				<p>
+					<code>moderatorId</code> is the Twitch ID of the moderator to use for request authentication (if applicable).
+				</p>
+
 				<h5 style="margin: 5px 0;">Example Formats:</h5>
 
 				<p>
@@ -49,6 +69,7 @@ const commands = (base: string, login: { sub: string } | null): Parameters<typeo
 						<details style="padding-top: 20px;">
 							<summary>Using Moderator Login</summary>
 							<p><code>!commands add !followage $(urlfetch {base}/twitch/followage/$(channel)/$(touser)?moderatorId={login ? login.sub : '{moderatorId}'})</code></p>
+							{!login && (<p>Note: Login so that the moderatorId value is populated with your account's Twitch ID.</p>)}
 						</details>
 					</div>
 				)
@@ -59,6 +80,21 @@ const commands = (base: string, login: { sub: string } | null): Parameters<typeo
 		name: 'Random Chatter',
 		api: `${base}/twitch/chatter/{StreamerUsername}?count={Count}&moderatorId={ModeratorId}`,
 		requiresLogin: true,
+		notes: (
+			<div>
+				<p>
+					<code>StreamerUsername</code> is the username of the streamer.
+				</p>
+
+				<p>
+					<code>count</code> is the number of chatters to return. The default is <code>1</code>.
+				</p>
+
+				<p>
+					<code>moderatorId</code> is the Twitch ID of the moderator to use for request authentication (if applicable).
+				</p>
+			</div>
+		),
 		chatbots: [
 			{
 				open: true,
@@ -73,6 +109,7 @@ const commands = (base: string, login: { sub: string } | null): Parameters<typeo
 						<details style="padding-top: 20px;">
 							<summary>Using Moderator Login</summary>
 							<p><code>!commands add !randomuser $(urlfetch {base}/twitch/chatter/$(channel)?moderatorId={login ? login.sub : '{moderatorId}'})</code></p>
+							{!login && (<p>Note: Login so that the moderatorId value is populated with your account's Twitch ID.</p>)}
 						</details>
 					</div>
 				)

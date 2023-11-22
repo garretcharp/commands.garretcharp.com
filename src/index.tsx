@@ -131,6 +131,8 @@ app.get('/auth/twitch/callback', async c => {
 		return c.text('Failed to login, internal error. please try again.', 400)
 	}
 
+	// NOTE: Realistically authentication should not be a static id that never changes but should be linked to a session
+	// and a specific browser. But for this app there are no user config options and it will never return private data
 	setCookie(c, 'tsid', stub.id.toString(), TSID_COOKIE_OPTIONS)
 
 	return c.redirect('/', 302)

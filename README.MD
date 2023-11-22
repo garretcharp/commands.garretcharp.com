@@ -54,3 +54,8 @@ Returns a random chatter from {channel} on Twitch.
 
 Returns:
 acpixel
+
+
+## Example Metrics Dashboard
+
+![Example Metrics Dashboard](.github/images/metrics.jpg)

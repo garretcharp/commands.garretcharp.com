@@ -127,7 +127,14 @@ routes.get('/followage/:streamer/:viewer', timing(), async c => {
 			})
 	})
 
-	if (!follow.data) return c.text(`@${users.viewer.login} is not following @${users.streamer.login}.`)
+	const ping = c.req.query('ping') === 'false' ? false : true
+
+	const getUsername = (name: string) => ping ? `@${name}` : name
+
+	const viewerName = getUsername(users.viewer.login)
+	const streamerName = getUsername(users.streamer.login)
+
+	if (!follow.data) return c.text(`${viewerName} is not following ${streamerName}.`)
 
 	const diff = Math.abs(Date.now() - new Date(follow.data.followed_at).getTime()) / 1000
 	const data = getFormattedData(diff, format), parts = []
@@ -142,7 +149,7 @@ routes.get('/followage/:streamer/:viewer', timing(), async c => {
 	if (data.minutes && data.minutes > 0) parts.push(`${data.minutes} minute${data.minutes === 1 ? '' : 's'}`)
 	if (data.seconds && data.seconds > 0) parts.push(`${data.seconds} second${data.seconds === 1 ? '' : 's'}`)
 
-	return c.text(`@${users.viewer.login} has been following @${users.streamer.login} for ${parts.join(', ')}.`)
+	return c.text(`${viewerName} has been following ${streamerName} for ${parts.join(', ')}.`)
 })
 
 // bots / viewers in all channels that arent real

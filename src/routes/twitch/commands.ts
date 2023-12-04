@@ -154,6 +154,8 @@ routes.get('/followage/:streamer/:viewer', timing(), async c => {
 
 // bots / viewers in all channels that arent real
 const KnownBots = new Set([
+	'00_emilyy',
+	'a_l0nely_girl',
 	'nightbot',
 	'streamelements',
 	'fossabot',

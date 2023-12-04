@@ -27,6 +27,9 @@ new_classes = ["AuthTokens"]
 [[analytics_engine_datasets]]
 binding = "FollowageApp"
 
+[triggers]
+crons = ["0 4 * * *"]
+
 [vars]
 WEBHOOK_BASE_URL = "https://commands.garretcharp.com"
 

@@ -153,7 +153,7 @@ routes.get('/followage/:streamer/:viewer', timing(), async c => {
 })
 
 // bots / viewers in all channels that arent real
-const KnownBots = new Set([
+const predefinedBots = new Set([
 	'00_emilyy',
 	'a_l0nely_girl',
 	'nightbot',
@@ -331,6 +331,11 @@ routes.get('/chatter/:streamer', timing(), async c => {
 		return c.text('Unable to get the random chatters due to an error internally or with the Twitch API. Authenticating again may fix this issue, or try again later.')
 	}
 
+	const KnownBots = await safe(
+		c.env.KV.get<string[]>('Twitch/Bots', { type: 'json', cacheTtl: 3600 })
+			.then(data => new Set(data))
+	)
+
 	const data = chatters.data.data
 
 	safe(() => {
@@ -340,7 +345,7 @@ routes.get('/chatter/:streamer', timing(), async c => {
 		})
 	})
 
-	const chattingUsers = c.req.query('bots') === 'true' ? data : data.filter(user => !KnownBots.has(user.user_login))
+	const chattingUsers = c.req.query('bots') === 'true' || !KnownBots.success ? data : data.filter(user => !KnownBots.data.has(user.user_login) && !predefinedBots.has(user.user_login))
 
 	if (chattingUsers.length === 0) return c.text('ERROR: Empty chatter list')
 

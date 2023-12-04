@@ -141,5 +141,28 @@ app.get('/auth/twitch/callback', async c => {
 app.route('/twitch/webhook', TwitchWebhookRoutes)
 app.route('/twitch', TwitchCommandRoutes)
 
-export default { fetch: app.fetch }
+export default {
+	fetch: app.fetch,
+	async scheduled(_, { KV }) {
+		const response = await fetch('https://api.twitchinsights.net/v1/bots/all')
+
+		if (response.status !== 200) return
+
+		const data = await response.json<{ bots: [string, number, number][] }>()
+
+		const bots = []
+
+		for (const bot of data.bots) {
+			const name = bot[0].toLowerCase()
+			const lastActive = bot[2] * 1000
+
+			if (lastActive < Date.now() - 1000 * 60 * 60 * 24 * 30 * 3) continue
+
+			bots.push(name)
+		}
+
+		await KV.put('Twitch/Bots', JSON.stringify(bots))
+	}
+} satisfies ExportedHandler<Bindings>
+
 export { default as AuthTokens } from './durable-objects/auth-tokens'

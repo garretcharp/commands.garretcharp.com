@@ -163,6 +163,6 @@ export default {
 
 		await KV.put('Twitch/Bots', JSON.stringify(bots))
 	}
-} satisfies ExportedHandler<Bindings>
+} as ExportedHandler<Bindings>
 
 export { default as AuthTokens } from './durable-objects/auth-tokens'

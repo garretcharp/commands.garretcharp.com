@@ -331,10 +331,12 @@ routes.get('/chatter/:streamer', timing(), async c => {
 		return c.text('Unable to get the random chatters due to an error internally or with the Twitch API. Authenticating again may fix this issue, or try again later.')
 	}
 
+	startTime(c, 'bots', 'Fetch Known Bots')
 	const KnownBots = await safe(
 		c.env.KV.get<string[]>('Twitch/Bots', { type: 'json', cacheTtl: 3600 })
 			.then(data => new Set(data))
 	)
+	endTime(c, 'bots')
 
 	const data = chatters.data.data
 

@@ -152,96 +152,6 @@ routes.get('/followage/:streamer/:viewer', timing(), async c => {
 	return c.text(`${viewerName} has been following ${streamerName} for ${parts.join(', ')}.`)
 })
 
-// bots / viewers in all channels that arent real
-const predefinedBots = new Set([
-	'00_emilyy',
-	'a_l0nely_girl',
-	'nightbot',
-	'streamelements',
-	'fossabot',
-	'wizebot',
-	'moobot',
-	'soundalerts',
-	'streamlabs',
-	'00rianaa',
-	'aliceydra',
-	'01ella',
-	'd0nk7',
-	'drapsnatt',
-	'asmr_miyu',
-	'markzynk',
-	'anotherttvviewer',
-	'commanderroot',
-	'lurxx',
-	'vlmercy',
-	'8hvdes',
-	'spofoh',
-	'rogueg1rl',
-	'elysian',
-	'samskio',
-	'7bvllet',
-	'aten',
-	'zerovero_',
-	'streamfahrer',
-	'peculiarasmr',
-	'business_daddy',
-	'blerp',
-	'creatisbot',
-	'melonejam',
-	'isnicable',
-	'own3d',
-	'anthony0lzpyn',
-	'johnk4c55v',
-	'davidyzkycm',
-	'mark8bl82w',
-	'anthonyorr97i',
-	'jasont7oqk4',
-	'danielefrrmf',
-	'michaelqmz35a',
-	'steven24nowl',
-	'josephq2bb5f',
-	'christopherc241a2',
-	'jamesapwzaf',
-	'michaelxfe5rg',
-	'georgew2ms8p',
-	'david3cetqd',
-	'stevenhv93kl',
-	'williamnmdu1q',
-	'joseph1zj6gg',
-	'pokemoncommunitygame',
-	'jasonc8l4wl',
-	'jasonnvs1x4',
-	'brianqpa0sj',
-	'jeffl0ab8p',
-	'mxrksy',
-	'kotyareg',
-	'der___markus',
-	'sunshineboy42',
-	'mee6livebot',
-	'kofistreambot',
-	'remasuri_bot',
-	'dyslexicapricots',
-	'fwost',
-	'srekrapstob',
-	'hak3r_bot',
-	'buttsbot',
-	'richard9oipjx',
-	'williamvea2rw',
-	'edward4rijf4',
-	'streamstickers',
-	'rainmaker',
-	'sparker_watcher',
-	'eklipse_chat_07',
-	'botrixoficial',
-	'nicdipples',
-	'eklipse_chat_04',
-	'aka_dev_acc',
-	'eklipse_chat_101',
-	'streamholics',
-	'eklipse_chat_02',
-	'diavolik898'
-])
-
 routes.get('/chatter/:streamer', timing(), async c => {
 	const { streamer } = c.req.param()
 
@@ -347,7 +257,7 @@ routes.get('/chatter/:streamer', timing(), async c => {
 		})
 	})
 
-	const chattingUsers = c.req.query('bots') === 'true' || !KnownBots.success ? data : data.filter(user => !KnownBots.data.has(user.user_login) && !predefinedBots.has(user.user_login))
+	const chattingUsers = c.req.query('bots') === 'true' || !KnownBots.success ? data : data.filter(user => !KnownBots.data.has(user.user_login))
 
 	if (chattingUsers.length === 0) return c.text('ERROR: Empty chatter list')
 

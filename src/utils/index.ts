@@ -60,17 +60,23 @@ export const constantTimeEqual = (a: string, b: string) => {
 	return c === 0
 }
 
-export const randomNumber = (from: number, to: number, not?: number[]): number => {
-	if (from > to) throw new TypeError('`from` must be less than or equal to `to`')
-	if (not && not.length >= to - from) throw new TypeError('`not` must be less than `to` - `from`')
+const cryptoRandom = () => crypto.getRandomValues(new Uint32Array(1))[0]
 
-	const range = to - from
+export const randomNumber = (from: number, to: number, not: number[] = []): number => {
+	if (from > to) [from, to] = [to, from]
 
-	const randomBuffer = crypto.getRandomValues(new Uint32Array(1))
+	const range = to - from + 1
 
-	const result = from + Math.floor((randomBuffer[0] / (0xffffffff + 1)) * range)
+	if (not.length >= range + 1) throw new TypeError('`not` must have less values than the range includes')
 
-	if (not?.includes(result)) return randomNumber(from, to, not)
+	let result = from + Math.floor((cryptoRandom() / (0xffffffff + 1)) * range)
+
+	let loops = 0
+	while (not.includes(result) && ++loops < range) {
+		result = from + Math.floor((cryptoRandom() / (0xffffffff + 1)) * range)
+	}
+
+	if (loops >= range) throw new TypeError('`not` includes all possible values in the range')
 
 	return result
 }

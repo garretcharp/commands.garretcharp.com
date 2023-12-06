@@ -71,12 +71,18 @@ export const randomNumber = (from: number, to: number, not: number[] = []): numb
 
 	let result = from + Math.floor((cryptoRandom() / (0xffffffff + 1)) * range)
 
-	let loops = 0
-	while (not.includes(result) && ++loops < range) {
-		result = from + Math.floor((cryptoRandom() / (0xffffffff + 1)) * range)
-	}
+	if (not.includes(result)) {
+		const valid = []
+		for (let i = from; i <= to; i++) {
+			if (!not.includes(i)) valid.push(i)
+		}
 
-	if (loops >= range) throw new TypeError('`not` includes all possible values in the range')
+		while (not.includes(result)) {
+			const index = Math.floor((cryptoRandom() / (0xffffffff + 1)) * valid.length)
+
+			result = valid[index]
+		}
+	}
 
 	return result
 }

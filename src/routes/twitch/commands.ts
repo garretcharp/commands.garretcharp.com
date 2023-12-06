@@ -250,14 +250,14 @@ routes.get('/chatter/:streamer', timing(), async c => {
 
 	const data = chatters.data.data
 
+	const chattingUsers = c.req.query('bots') === 'true' || !KnownBots.success ? data : data.filter(user => !KnownBots.data.has(user.user_login))
+
 	safe(() => {
 		c.env.FollowageApp.writeDataPoint({
-			blobs: ['twitch', 'chatter', users.streamer!.id, users.streamer!.login, `Chatters: ${data.length}`, '', moderatorId ?? '', c.req.raw.cf?.colo as string ?? ''],
+			blobs: ['twitch', 'chatter', users.streamer!.id, users.streamer!.login, `Chatters: ${data.length} (filtered: ${chattingUsers.length})`, '', moderatorId ?? '', c.req.raw.cf?.colo as string ?? ''],
 			indexes: ['commands']
 		})
 	})
-
-	const chattingUsers = c.req.query('bots') === 'true' || !KnownBots.success ? data : data.filter(user => !KnownBots.data.has(user.user_login))
 
 	if (chattingUsers.length === 0) return c.text('ERROR: Empty chatter list')
 

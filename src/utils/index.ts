@@ -60,31 +60,16 @@ export const constantTimeEqual = (a: string, b: string) => {
 	return c === 0
 }
 
-const cryptoRandom = () => crypto.getRandomValues(new Uint32Array(1))[0]
+export const getRandomValues = <T>(array: T[], count: number) => {
+	const results: T[] = []
 
-export const randomNumber = (from: number, to: number, not: number[] = []): number => {
-	if (from > to) [from, to] = [to, from]
-
-	const range = to - from + 1
-
-	if (not.length >= range + 1) throw new TypeError('`not` must have less values than the range includes')
-
-	let result = from + Math.floor((cryptoRandom() / (0xffffffff + 1)) * range)
-
-	if (not.includes(result)) {
-		const valid = []
-		for (let i = from; i <= to; i++) {
-			if (!not.includes(i)) valid.push(i)
-		}
-
-		while (not.includes(result)) {
-			const index = Math.floor((cryptoRandom() / (0xffffffff + 1)) * valid.length)
-
-			result = valid[index]
-		}
+	const items = [...array]
+	for (let i = 0; i < count; i++) {
+		if (items.length === 0) break
+		results.push(...items.splice(Math.floor(Math.random() * items.length), 1))
 	}
 
-	return result
+	return results
 }
 
 export const getBaseUrl = (url: string) => {

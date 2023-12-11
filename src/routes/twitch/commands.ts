@@ -1,6 +1,6 @@
 import { Hono } from 'hono/quick'
 import { timing, startTime, endTime } from 'hono/timing'
-import { randomNumber, safe } from '../../utils'
+import { getRandomValues, safe } from '../../utils'
 import { getFormat, getFormattedData } from '../../utils/time'
 import { getTwitchChatters, getTwitchFollower, getTwitchUsers } from '../../utils/twitch'
 
@@ -264,20 +264,17 @@ routes.get('/chatter/:streamer', timing(), async c => {
 
 	if (chattingUsers.length === 0) return c.text('ERROR: Empty chatter list')
 
-	const indexes: number[] = []
-	for (let i = 1; i <= Math.min(count, chattingUsers.length); i++) {
-		indexes.push(randomNumber(0, chattingUsers.length - 1, indexes))
-	}
+	const values = getRandomValues(chattingUsers, count)
 
 	if (c.req.query('debugger') === 'true')
 		return c.json({
 			chattingUsers,
 			count,
 			min: Math.min(count, chattingUsers.length),
-			results: indexes.map(index => chattingUsers[index].user_login)
+			results: values
 		})
 
-	return c.text(indexes.map(index => chattingUsers[index].user_login).join(', '))
+	return c.text(values.map(val => val.user_login).join(', '))
 })
 
 export default routes

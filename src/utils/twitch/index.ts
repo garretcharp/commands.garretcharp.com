@@ -275,6 +275,10 @@ export const getTwitchChatters = async ({ env, streamer, moderator }: GetTwitchC
 			headers: {
 				'Client-ID': env.TWITCH_CLIENT_ID,
 				Authorization: `Bearer ${access_token}`
+			},
+			cf: {
+				cacheEverything: true,
+				cacheTtlByStatus: { '200-299': 60, '500-599': 10 }
 			}
 		})
 	)

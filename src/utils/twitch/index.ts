@@ -177,65 +177,40 @@ export const getTwitchCurrentUser = async ({ env, ctx, token }: { env: Bindings,
 	return user
 }
 
-export const getTwitchUsers = async ({ env, logins, ctx }: { env: Bindings, logins: string[], ctx?: ExecutionContext }) => {
+export const getTwitchUsers = async ({ env, logins }: { env: Bindings, logins: string[] }) => {
 	const result: Map<string, { id: string, login: string, display_name: string }> = new Map()
 
 	if (logins.length === 0) throw new TypeError('logins must not be empty')
 
-	const unique = [...new Set(logins.map(login => login.toLowerCase()))]
-
-	const users = await Promise.allSettled(
-		unique.map(login => env.KV.get(`Twitch/Logins/${login.toLowerCase()}`).then(data => data === null ? null : TwitchUser.parse(JSON.parse(data))))
-	)
-
-	for (const user of users) {
-		if (user.status === 'fulfilled' && user.value !== null) {
-			result.set(user.value.login.toLowerCase(), user.value)
-		} else if (user.status === 'rejected') {
-			safe(() => {
-				env.FollowageApp.writeDataPoint({
-					blobs: ['twitch/getUser/kv', `KV get user rejected: ${user.reason.message}`],
-					indexes: ['errors']
-				})
-			})
-		}
-	}
-
-	const remaining = unique.filter(login => !result.has(login.toLowerCase()))
-
-	if (!remaining.length) return result
-
 	const token = await getTwitchAppToken(env)
 
-	const response = await safe(
-		fetch(`https://api.twitch.tv/helix/users?login=${remaining.join('&login=')}`, {
-			method: 'GET',
-			headers: {
-				'Content-Type': 'application/x-www-form-urlencoded',
-				'Client-ID': env.TWITCH_CLIENT_ID,
-				Authorization: `Bearer ${token}`
-			}
-		})
+	const responses = await Promise.all(
+		[...new Set(logins.map(login => login.toLowerCase()))].map(login =>
+			fetch(`https://api.twitch.tv/helix/users?login=${login}`, {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded',
+					'Client-ID': env.TWITCH_CLIENT_ID,
+					Authorization: `Bearer ${token}`
+				},
+				cf: {
+					cacheEverything: true,
+					cacheTtlByStatus: { '200-299': 60 * 60 * 24 * 7, '500-599': 10 }
+				}
+			})
+		)
 	)
 
-	if (!response.success || response.data.status !== 200) {
-		if (response.success) throw new Error(await response.data.text())
-		else throw response.error
-	}
+	for (const response of responses) {
+		const data = await safe(response.json())
 
-	const data = await safe(response.data.json())
+		if (!data.success) throw new Error('Failed to get users, twitch response error (unable to read json). Response: ' + await response.text())
 
-	if (!data.success) throw new Error('Failed to get users, twitch response error (unable to parse). Response: ' + await response.data.text())
+		const { data: twitchUsers } = TwitchUsersResponse.parse(data.data)
 
-	const { data: twitchUsers } = TwitchUsersResponse.parse(data.data)
-
-	for (const user of twitchUsers) {
-		const info = { id: user.id, login: user.login, display_name: user.display_name }
-		result.set(user.login.toLowerCase(), info)
-
-		ctx?.waitUntil(safe(
-			env.KV.put(`Twitch/Logins/${user.login.toLowerCase()}`, JSON.stringify(info), { expirationTtl: 60 * 60 * 24 * 7 })
-		))
+		for (const user of twitchUsers) {
+			result.set(user.login.toLowerCase(), { id: user.id, login: user.login, display_name: user.display_name })
+		}
 	}
 
 	return result

@@ -19,8 +19,7 @@ routes.get('/followage/:streamer/:viewer', timing(), async c => {
 	const response = await safe(
 		getTwitchUsers({
 			env: c.env,
-			logins: [streamer.toLowerCase(), viewer.toLowerCase()],
-			ctx: c.executionCtx
+			logins: [streamer.toLowerCase(), viewer.toLowerCase()]
 		})
 	)
 	endTime(c, 'users')
@@ -162,8 +161,7 @@ routes.get('/chatter/:streamer', timing(), async c => {
 	const response = await safe(
 		getTwitchUsers({
 			env: c.env,
-			logins: [streamer.toLowerCase()],
-			ctx: c.executionCtx
+			logins: [streamer.toLowerCase()]
 		})
 	)
 	endTime(c, 'users')
@@ -243,7 +241,7 @@ routes.get('/chatter/:streamer', timing(), async c => {
 
 	startTime(c, 'bots', 'Fetch Known Bots')
 	const KnownBots = await safe(
-		c.env.KV.get<string[]>('Twitch/Bots', { type: 'json', cacheTtl: 3600 })
+		c.env.KV.get<string[]>('Twitch/Bots', { type: 'json', cacheTtl: 60 * 60 * 6 })
 			.then(data => new Set(data))
 	)
 	endTime(c, 'bots')

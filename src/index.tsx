@@ -91,7 +91,7 @@ app.get('/auth/twitch/callback', async c => {
 		return c.text('Failed to login, twitch error. please try again.', 400)
 	}
 
-	const user = await safe(getTwitchCurrentUser({ env: c.env, token: token.data.access_token, ctx: c.executionCtx }))
+	const user = await safe(getTwitchCurrentUser({ env: c.env, token: token.data.access_token }))
 
 	if (!user.success) {
 		safe(() => {

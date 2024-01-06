@@ -36,9 +36,7 @@ export const parseIdToken = (token: string) => {
 		)
 	))
 
-	if (!parsed.success) return null
-
-	return parsed.data
+	return parsed.success ? parsed.data : null
 }
 
 const UserTokenResponse = AppTokenResponse.extend({
@@ -143,7 +141,7 @@ const TwitchUsersResponse = object({
 	data: array(TwitchUser)
 })
 
-export const getTwitchCurrentUser = async ({ env, ctx, token }: { env: Bindings, ctx?: ExecutionContext, token: string }) => {
+export const getTwitchCurrentUser = async ({ env, token }: { env: Bindings, token: string }) => {
 	const response = await safe(
 		fetch('https://api.twitch.tv/helix/users', {
 			method: 'GET',
@@ -168,13 +166,7 @@ export const getTwitchCurrentUser = async ({ env, ctx, token }: { env: Bindings,
 
 	if (twitchUsers.length !== 1) throw new Error('Failed to get users, twitch response error (invalid response). Response: ' + await response.data.text())
 
-	const user = twitchUsers[0]
-
-	ctx?.waitUntil(safe(
-		env.KV.put(`Twitch/Logins/${user.login.toLowerCase()}`, JSON.stringify(user), { expirationTtl: 60 * 60 * 24 * 7 })
-	))
-
-	return user
+	return twitchUsers[0]
 }
 
 export const getTwitchUsers = async ({ env, logins }: { env: Bindings, logins: string[] }) => {

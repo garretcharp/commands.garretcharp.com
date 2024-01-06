@@ -1,0 +1,16 @@
+export default {
+  year: 'yıl',
+  years: 'yıl',
+  month: 'ay',
+  months: 'ay',
+  week: 'hafta',
+  weeks: 'hafta',
+  day: 'gün',
+  days: 'gün',
+  hour: 'saat',
+  hours: 'saat',
+  minute: 'dakika',
+  minutes: 'dakika',
+  second: 'saniye',
+  seconds: 'saniye',
+};

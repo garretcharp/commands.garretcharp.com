@@ -85,7 +85,7 @@ export async function getTwitchToken (input: GetTwitchAppToken | GetTwitchUserTo
 	}
 
 	const text = await response.data.text()
-	const data = await safe(JSON.parse(text))
+	const data = safe(() => JSON.parse(text))
 
 	if (!data.success) throw new Error('Failed to get twitch token, twitch response error (unable to parse). Response: ' + text)
 
@@ -108,7 +108,7 @@ export const getTwitchAppToken = async (env: Bindings, force?: boolean) => {
 
 	const text = await get.data.text()
 
-	const data = await safe(JSON.parse(text))
+	const data = safe(() => JSON.parse(text))
 
 	if (!data.success) throw new Error('Failed to get twitch app token, twitch response error (unable to parse). Response: ' + text)
 
@@ -128,7 +128,7 @@ const getTwitchUserToken = async ({ env, userId, force }: { env: Bindings, userI
 	}
 
 	const text = await token.data.text()
-	const data = await safe(JSON.parse(text))
+	const data = safe(() => JSON.parse(text))
 
 	if (!data.success) throw new Error('Failed to get user token, internal DO response error (unable to parse). Response: ' + text)
 
@@ -163,7 +163,7 @@ export const getTwitchCurrentUser = async ({ env, token }: { env: Bindings, toke
 	}
 
 	const text = await response.data.text()
-	const data = await safe(JSON.parse(text))
+	const data = safe(() => JSON.parse(text))
 
 	if (!data.success) throw new Error('Failed to get users, twitch response error (unable to parse). Response: ' + text)
 
@@ -200,7 +200,7 @@ export const getTwitchUsers = async ({ env, logins }: { env: Bindings, logins: s
 
 	for (const response of responses) {
 		const text = await response.text()
-		const data = await safe(JSON.parse(text))
+		const data = safe(() => JSON.parse(text))
 
 		if (!data.success) throw new Error('Failed to get users, twitch response error (unable to read json). Response: ' + text)
 
@@ -248,7 +248,7 @@ export const getTwitchFollower = async ({ env, streamer, viewer, moderator }: Ge
 	}
 
 	const text = await response.data.text()
-	const data = await safe(JSON.parse(text))
+	const data = safe(() => JSON.parse(text))
 
 	if (!data.success) throw new Error('Failed to get followers, twitch response error (unable to parse). Response: ' + text)
 
@@ -288,7 +288,7 @@ export const getTwitchChatters = async ({ env, streamer, moderator }: GetTwitchC
 	}
 
 	const text = await response.data.text()
-	const data = await safe(JSON.parse(text))
+	const data = safe(() => JSON.parse(text))
 
 	if (!data.success) throw new Error('Failed to get chatters, twitch response error (unable to parse). Response: ' + text)
 

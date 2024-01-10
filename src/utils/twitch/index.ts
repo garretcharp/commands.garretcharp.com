@@ -84,9 +84,10 @@ export async function getTwitchToken (input: GetTwitchAppToken | GetTwitchUserTo
 		else throw response.error
 	}
 
-	const data = await safe(response.data.json())
+	const text = await response.data.text()
+	const data = await safe(JSON.parse(text))
 
-	if (!data.success) throw new Error('Failed to get twitch token, twitch response error (unable to parse). Response: ' + await response.data.text())
+	if (!data.success) throw new Error('Failed to get twitch token, twitch response error (unable to parse). Response: ' + text)
 
 	return input.grant_type === 'client_credentials' ? AppTokenResponse.parse(data.data) : UserTokenResponse.parse(data.data)
 }
@@ -105,9 +106,11 @@ export const getTwitchAppToken = async (env: Bindings, force?: boolean) => {
 		else throw get.error
 	}
 
-	const data = await safe(get.data.json())
+	const text = await get.data.text()
 
-	if (!data.success) throw new Error('Failed to get twitch app token, twitch response error (unable to parse). Response: ' + await get.data.text())
+	const data = await safe(JSON.parse(text))
+
+	if (!data.success) throw new Error('Failed to get twitch app token, twitch response error (unable to parse). Response: ' + text)
 
 	return TokenResponse.parse(data.data).access_token
 }
@@ -124,9 +127,10 @@ const getTwitchUserToken = async ({ env, userId, force }: { env: Bindings, userI
 		else throw token.error
 	}
 
-	const data = await safe(token.data.json())
+	const text = await token.data.text()
+	const data = await safe(JSON.parse(text))
 
-	if (!data.success) throw new Error('Failed to get user token, internal DO response error (unable to parse). Response: ' + await token.data.text())
+	if (!data.success) throw new Error('Failed to get user token, internal DO response error (unable to parse). Response: ' + text)
 
 	return TokenResponse.parse(data.data).access_token
 }
@@ -158,13 +162,14 @@ export const getTwitchCurrentUser = async ({ env, token }: { env: Bindings, toke
 		else throw response.error
 	}
 
-	const data = await safe(response.data.json())
+	const text = await response.data.text()
+	const data = await safe(JSON.parse(text))
 
-	if (!data.success) throw new Error('Failed to get users, twitch response error (unable to parse). Response: ' + await response.data.text())
+	if (!data.success) throw new Error('Failed to get users, twitch response error (unable to parse). Response: ' + text)
 
 	const { data: twitchUsers } = TwitchUsersResponse.parse(data.data)
 
-	if (twitchUsers.length !== 1) throw new Error('Failed to get users, twitch response error (invalid response). Response: ' + await response.data.text())
+	if (twitchUsers.length !== 1) throw new Error('Failed to get users, twitch response error (invalid response). Response: ' + text)
 
 	return twitchUsers[0]
 }
@@ -194,9 +199,10 @@ export const getTwitchUsers = async ({ env, logins }: { env: Bindings, logins: s
 	)
 
 	for (const response of responses) {
-		const data = await safe(response.json())
+		const text = await response.text()
+		const data = await safe(JSON.parse(text))
 
-		if (!data.success) throw new Error('Failed to get users, twitch response error (unable to read json). Response: ' + await response.text())
+		if (!data.success) throw new Error('Failed to get users, twitch response error (unable to read json). Response: ' + text)
 
 		const { data: twitchUsers } = TwitchUsersResponse.parse(data.data)
 
@@ -241,9 +247,10 @@ export const getTwitchFollower = async ({ env, streamer, viewer, moderator }: Ge
 		else throw response.error
 	}
 
-	const data = await safe(response.data.json())
+	const text = await response.data.text()
+	const data = await safe(JSON.parse(text))
 
-	if (!data.success) throw new Error('Failed to get followers, twitch response error (unable to parse). Response: ' + await response.data.text())
+	if (!data.success) throw new Error('Failed to get followers, twitch response error (unable to parse). Response: ' + text)
 
 	return TwitchFollowResponse.parse(data.data).data[0]
 }
@@ -280,9 +287,10 @@ export const getTwitchChatters = async ({ env, streamer, moderator }: GetTwitchC
 		else throw response.error
 	}
 
-	const data = await safe(response.data.json())
+	const text = await response.data.text()
+	const data = await safe(JSON.parse(text))
 
-	if (!data.success) throw new Error('Failed to get chatters, twitch response error (unable to parse). Response: ' + await response.data.text())
+	if (!data.success) throw new Error('Failed to get chatters, twitch response error (unable to parse). Response: ' + text)
 
 	return TwitchChattersResponse.parse(data.data)
 }

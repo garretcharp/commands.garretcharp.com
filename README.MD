@@ -27,6 +27,8 @@ Returns the followage of {user} in {channel} on Twitch.
 
 `ping` - Whether or not to ping the user in the response. (Defaults to true, set to `false` to not ping the user)
 
+`lang` - Set followage message language. Currently available languages are `en` and `tr`.  (Defaults to `en`)
+
 #### Example
 
 `https://commands.garretcharp.com/twitch/followage/itsunsmart/acpixel`

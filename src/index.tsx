@@ -76,9 +76,7 @@ app.get('/auth/twitch/callback', async c => {
 	)
 
 	if (!token.success) {
-		const error = safe(() => JSON.parse(token.error.message))
-
-		if (error.success && error.data.message.toLowerCase().includes('invalid authorization code'))
+		if (token.error.message.toLowerCase().includes('invalid authorization code'))
 			return c.text(`Failed to login, authorization code is invalid. Please try again.`)
 
 		safe(() => {

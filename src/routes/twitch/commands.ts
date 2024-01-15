@@ -25,9 +25,7 @@ routes.get('/followage/:streamer/:viewer', timing(), async c => {
 	endTime(c, 'users')
 
 	if (!response.success) {
-		const error = safe(() => JSON.parse(response.error.message))
-
-		if (error.success && error.data.message.toLowerCase().includes('bad identifiers'))
+		if (response.error.message.toLowerCase().includes('bad identifiers'))
 			return c.text(`Could not get users from Twitch API, one or more of the usernames are not valid. Streamer: ${streamer}, Viewer: ${viewer}`)
 
 		safe(() => {
@@ -167,9 +165,7 @@ routes.get('/chatter/:streamer', timing(), async c => {
 	endTime(c, 'users')
 
 	if (!response.success) {
-		const error = safe(() => JSON.parse(response.error.message))
-
-		if (error.success && error.data.message.toLowerCase().includes('bad identifiers'))
+		if (response.error.message.toLowerCase().includes('bad identifiers'))
 			return c.text(`Could not get users from Twitch API, the streamers username: ${streamer} is not valid.`)
 
 		safe(() => {

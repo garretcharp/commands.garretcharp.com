@@ -140,7 +140,12 @@ app.route('/twitch/webhook', TwitchWebhookRoutes)
 app.route('/twitch', TwitchCommandRoutes)
 
 export default {
-	fetch: app.fetch,
+	async fetch(request, env, ctx) {
+		console.log('start')
+		const response = await app.fetch(request, env, ctx)
+		console.log('complete')
+		return response
+	},
 	async scheduled(_, { KV }) {
 		const response = await fetch('https://api.twitchinsights.net/v1/bots/all')
 

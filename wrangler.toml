@@ -1,6 +1,7 @@
 name = "followage"
 main = "dist/index.mjs"
 
+logpush = true
 workers_dev = false
 account_id = "dc941e8156f4a1336ca08481cb6d4222"
 

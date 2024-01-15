@@ -271,4 +271,17 @@ routes.get('/chatter/:streamer', timing(), async c => {
 	return c.text(values.map(val => val.user_login).join(', '))
 })
 
+routes.onError((error, c) => {
+	safe(() => {
+		c.env.FollowageApp.writeDataPoint({
+			blobs: ['commands/twitch', `onError: ${error.message}`, '', '', '', c.req.raw.cf?.colo as string ?? ''],
+			indexes: ['errors']
+		})
+	})
+
+	console.error(error)
+
+	return c.text('An error occurred while processing your request, please try again later.', 500)
+})
+
 export default routes

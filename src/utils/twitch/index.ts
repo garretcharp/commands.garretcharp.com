@@ -204,9 +204,11 @@ export const getTwitchUsers = async ({ env, logins }: { env: Bindings, logins: s
 
 		if (!data.success) throw new Error('Failed to get users, twitch response error (unable to read json). Response: ' + text)
 
-		const { data: twitchUsers } = TwitchUsersResponse.parse(data.data)
+		const parsed = TwitchUsersResponse.safeParse(data.data)
 
-		for (const user of twitchUsers) {
+		if (!parsed.success) throw new Error('Failed to get users, twitch response error (unable to parse). Response: ' + text)
+
+		for (const user of parsed.data.data) {
 			result.set(user.login.toLowerCase(), { id: user.id, login: user.login, display_name: user.display_name })
 		}
 	}

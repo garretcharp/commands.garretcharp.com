@@ -215,7 +215,7 @@ routes.get('/chatter/:streamer', timing(), async c => {
 				return c.text('In order to use this API the streamer must login to the application.')
 			}
 
-			if (chatters.error.message.toLowerCase().includes('not a moderator for the broadcaster')) {
+			if (chatters.error.message.toLowerCase().includes('not a moderator for the broadcaster') || chatters.error.message.toLowerCase().includes('does not have moderator permissions')) {
 				return c.text('The moderatorId provided in the request is not a moderator for the streamer. Please ensure the user is a moderator or remove the moderatorId from the request.')
 			}
 

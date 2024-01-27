@@ -3,14 +3,14 @@ import { decodeBase64, encodeBase64 } from 'oslo/encoding'
 import { safe } from '../index'
 
 const AppTokenResponse = object({
-	access_token: string().min(10),
+	access_token: string(),
 	expires_in: number().min(60)
 })
 
 const IDToken = object({
-	sub: string().min(1),
-	login: string().min(1).optional().nullable(),
-	preferred_username: string().min(1)
+	sub: string(),
+	login: string().optional().nullable(),
+	preferred_username: string()
 }).passthrough()
 
 export const generateIdToken = (user: { id: string, login: string, display_name: string }) => {
@@ -40,8 +40,8 @@ export const parseIdToken = (token: string) => {
 }
 
 const UserTokenResponse = AppTokenResponse.extend({
-	refresh_token: string().min(10),
-	scope: array(string())
+	refresh_token: string({ required_error: 'refresh_token is required' }),
+	scope: array(string({ required_error: 'scope is required' })),
 })
 
 type GetTwitchAppToken = {
@@ -87,12 +87,16 @@ export async function getTwitchToken (input: GetTwitchAppToken | GetTwitchUserTo
 	const text = await response.data.text()
 	const data = safe(() => JSON.parse(text))
 
-	if (!data.success) throw new Error('Failed to get twitch token, twitch response error (unable to parse). Response: ' + text)
+	if (!data.success) throw new Error('Failed to get twitch token, twitch response error (unable to parse json). Response: ' + text)
 
-	return input.grant_type === 'client_credentials' ? AppTokenResponse.parse(data.data) : UserTokenResponse.parse(data.data)
+	const parsed = input.grant_type === 'client_credentials' ? AppTokenResponse.safeParse(data.data) : UserTokenResponse.safeParse(data.data)
+
+	if (!parsed.success) throw new Error('Failed to get twitch token, internal DO response error (unable to parse to schema). Response: ' + text)
+
+	return parsed.data
 }
 
-const TokenResponse = object({ access_token: string() })
+const TokenResponse = object({ access_token: string({ required_error: 'access_token is required' }) })
 
 export const getTwitchAppToken = async (env: Bindings, force?: boolean) => {
 	const stub = env.AuthTokens.get(
@@ -110,9 +114,13 @@ export const getTwitchAppToken = async (env: Bindings, force?: boolean) => {
 
 	const data = safe(() => JSON.parse(text))
 
-	if (!data.success) throw new Error('Failed to get twitch app token, twitch response error (unable to parse). Response: ' + text)
+	if (!data.success) throw new Error('Failed to get twitch app token, twitch response error (unable to parse json). Response: ' + text)
 
-	return TokenResponse.parse(data.data).access_token
+	const parsed = TokenResponse.safeParse(data.data)
+
+	if (!parsed.success) throw new Error('Failed to get twitch app token, internal DO response error (unable to parse to schema). Response: ' + text)
+
+	return parsed.data.access_token
 }
 
 const getTwitchUserToken = async ({ env, userId, force }: { env: Bindings, userId: string, force?: boolean }) => {
@@ -130,15 +138,19 @@ const getTwitchUserToken = async ({ env, userId, force }: { env: Bindings, userI
 	const text = await token.data.text()
 	const data = safe(() => JSON.parse(text))
 
-	if (!data.success) throw new Error('Failed to get user token, internal DO response error (unable to parse). Response: ' + text)
+	if (!data.success) throw new Error('Failed to get user token, internal DO response error (unable to parse json). Response: ' + text)
 
-	return TokenResponse.parse(data.data).access_token
+	const parsed = TokenResponse.safeParse(data.data)
+
+	if (!parsed.success) throw new Error('Failed to get user token, internal DO response error (unable to parse to schema). Response: ' + text)
+
+	return parsed.data.access_token
 }
 
 const TwitchUser = object({
-	id: string().min(1),
-	login: string().min(1),
-	display_name: string().min(1)
+	id: string({ required_error: 'id is required' }),
+	login: string({ required_error: 'login is required' }),
+	display_name: string({ required_error: 'display_name is required' }),
 })
 
 const TwitchUsersResponse = object({
@@ -165,10 +177,13 @@ export const getTwitchCurrentUser = async ({ env, token }: { env: Bindings, toke
 	const text = await response.data.text()
 	const data = safe(() => JSON.parse(text))
 
-	if (!data.success) throw new Error('Failed to get users, twitch response error (unable to parse). Response: ' + text)
+	if (!data.success) throw new Error('Failed to get users, twitch response error (unable to json parse). Response: ' + text)
 
-	const { data: twitchUsers } = TwitchUsersResponse.parse(data.data)
+	const parsed = TwitchUsersResponse.safeParse(data.data)
 
+	if (!parsed.success) throw new Error('Failed to get users, twitch response error (unable to parse to schema). Response: ' + text)
+
+	const twitchUsers = parsed.data.data
 	if (twitchUsers.length !== 1) throw new Error('Failed to get users, twitch response error (invalid response). Response: ' + text)
 
 	return twitchUsers[0]
@@ -218,8 +233,8 @@ export const getTwitchUsers = async ({ env, logins }: { env: Bindings, logins: s
 
 const TwitchFollowResponse = object({
 	data: array(object({
-		user_id: string({ required_error: 'id is required' }).min(1, { message: 'id is too short' }),
-		user_name: string({ required_error: 'name is required' }).min(1, { message: 'name is too short' }),
+		user_id: string({ required_error: 'id is required' }),
+		user_name: string({ required_error: 'name is required' }),
 		followed_at: string({ required_error: 'followed_at is required' }).datetime({ message: 'followed_at is not a valid date' })
 	}))
 })
@@ -252,16 +267,20 @@ export const getTwitchFollower = async ({ env, streamer, viewer, moderator }: Ge
 	const text = await response.data.text()
 	const data = safe(() => JSON.parse(text))
 
-	if (!data.success) throw new Error('Failed to get followers, twitch response error (unable to parse). Response: ' + text)
+	if (!data.success) throw new Error('Failed to get followers, twitch response error (unable to parse json). Response: ' + text)
 
-	return TwitchFollowResponse.parse(data.data).data[0]
+	const parsed = TwitchFollowResponse.safeParse(data.data)
+
+	if (!parsed.success) throw new Error('Failed to get followers, twitch response error (unable to parse to schema). Response: ' + text)
+
+	return parsed.data.data[0]
 }
 
 const TwitchChattersResponse = object({
 	data: array(object({
-		user_id: string({ required_error: 'id is required' }).min(1, { message: 'id is too short' }),
-		user_login: string({ required_error: 'login is required' }).min(1, { message: 'login is too short' }),
-		user_name: string({ required_error: 'name is required' }).min(1, { message: 'name is too short' })
+		user_id: string({ required_error: 'id is required' }),
+		user_login: string({ required_error: 'login is required' }),
+		user_name: string({ required_error: 'name is required' })
 	}))
 })
 
@@ -292,7 +311,11 @@ export const getTwitchChatters = async ({ env, streamer, moderator }: GetTwitchC
 	const text = await response.data.text()
 	const data = safe(() => JSON.parse(text))
 
-	if (!data.success) throw new Error('Failed to get chatters, twitch response error (unable to parse). Response: ' + text)
+	if (!data.success) throw new Error('Failed to get chatters, twitch response error (unable to parse json). Response: ' + text)
 
-	return TwitchChattersResponse.parse(data.data)
+	const parsed = TwitchChattersResponse.safeParse(data.data)
+
+	if (!parsed.success) throw new Error('Failed to get chatters, twitch response error (unable to parse to schema). Response: ' + text)
+
+	return parsed.data.data
 }

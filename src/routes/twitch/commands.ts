@@ -242,13 +242,11 @@ routes.get('/chatter/:streamer', timing(), async c => {
 	)
 	endTime(c, 'bots')
 
-	const data = chatters.data.data
-
-	const chattingUsers = c.req.query('bots') === 'true' || !KnownBots.success ? data : data.filter(user => !KnownBots.data.has(user.user_login))
+	const chattingUsers = c.req.query('bots') === 'true' || !KnownBots.success ? chatters.data : chatters.data.filter(user => !KnownBots.data.has(user.user_login))
 
 	safe(() => {
 		c.env.FollowageApp.writeDataPoint({
-			blobs: ['twitch', 'chatter', users.streamer!.id, users.streamer!.login, `Chatters: ${data.length} (filtered: ${chattingUsers.length})`, '', moderatorId ?? '', c.req.raw.cf?.colo as string ?? ''],
+			blobs: ['twitch', 'chatter', users.streamer!.id, users.streamer!.login, `Chatters: ${chatters.data.length} (filtered: ${chattingUsers.length})`, '', moderatorId ?? '', c.req.raw.cf?.colo as string ?? ''],
 			indexes: ['commands']
 		})
 	})
